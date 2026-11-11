@@ -1,0 +1,5 @@
+# release assets and downloaded models are never committed
+*.tar.gz
+*.tar.gz.sha256
+zetic-mlange-hexagon-*/
+models/
