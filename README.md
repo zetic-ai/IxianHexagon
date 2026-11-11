@@ -174,8 +174,18 @@ A larger context costs memory; set it only as large as the app needs. d1 models 
 
 ## Licenses
 
-- Third-party code in the SDK: tokenizers-cpp (Apache-2.0, with the Hugging Face `tokenizers` Rust crate), nlohmann/json
-  (MIT), stb_image v2.30 (public domain / MIT). The texts are in [`LICENSES/`](LICENSES) here and in the SDK tarball.
+Third-party code in the SDK library and the CLIs; the texts are in [`LICENSES/`](LICENSES) here and in the SDK tarball
+(start with [`LICENSES/NOTICE.txt`](LICENSES/NOTICE.txt)):
+
+| Component | License | File |
+|---|---|---|
+| tokenizers-cpp (MLC AI) | Apache-2.0 | `tokenizers-cpp-LICENSE.txt` |
+| Hugging Face `tokenizers` Rust crate 0.21.2 and its crates.io dependencies | MIT and / or Apache-2.0 (or a similar permissive choice) per crate | `tokenizers-rust-notices.txt`: every crate with its license, and the license files of each linked crate |
+| Oniguruma (in the `onig_sys` crate) | BSD-2-Clause | `tokenizers-rust-notices.txt` |
+| esaxx and sais-lite (in the `esaxx-rs` crate) | MIT | `tokenizers-rust-notices.txt` |
+| nlohmann/json 3.12.0 | MIT | `nlohmann-json-LICENSE.MIT` |
+| stb_image v2.30 | public domain / MIT | `stb_image-LICENSE.txt` |
+
 - The DSP library `lib/libhexrt_v73_skel.so` and the FastRPC stub inside the SDK library are built with the Qualcomm
   Hexagon SDK.
 - The LFM3 and d1 model weights are not part of the SDK; they are under the LFM Open License v1.0 (Liquid AI), as stated

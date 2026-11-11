@@ -1,0 +1,21 @@
+Third-party notices of the ZeticMLange Hexagon SDK for the Dragonwing IQ9
+==========================================================================
+
+The SDK library (lib/libzetic_mlange_hexagon.so) and the CLIs (bin/) contain this third-party code:
+
+- tokenizers-cpp (MLC AI): Apache-2.0. Text: tokenizers-cpp-LICENSE.txt. Its static library links:
+    - the Hugging Face "tokenizers" Rust crate 0.21.2 (Apache-2.0) and its crates.io dependencies, each under MIT and / or
+      Apache-2.0 or a similar permissive license;
+    - Oniguruma (bundled in the onig_sys crate): BSD-2-Clause, Copyright (c) 2002-2021 K.Kosako;
+    - esaxx (Copyright (c) 2010 Daisuke Okanohara) and sais-lite (Copyright (c) 2008-2009 Yuta Mori), bundled in the
+      esaxx-rs crate: MIT.
+  The list of every crate (linked or build-time only), and the license and notice files of each linked crate, including the
+  Oniguruma, esaxx and sais-lite notices: tokenizers-rust-notices.txt.
+- nlohmann/json 3.12.0: MIT. Text: nlohmann-json-LICENSE.MIT.
+- stb_image v2.30 (Sean Barrett): public domain / MIT (dual). Text: stb_image-LICENSE.txt.
+
+The DSP library (lib/libhexrt_v73_skel.so) and the FastRPC stub inside the SDK library are built with the Qualcomm
+Hexagon SDK (qaic-generated code).
+
+The LFM3 and d1 model weights are not part of the SDK. They are under the LFM Open License v1.0 (Liquid AI), as stated
+in each model repository.
