@@ -1,8 +1,8 @@
-# ZeticMLange Hexagon SDK for the Dragonwing IQ9
+# Ixian Hexagon SDK for the Dragonwing IQ9
 
-This repository distributes the ZeticMLange Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
-The SDK runs the LFM3 family and the d1 decision models on the Hexagon NPU of the IQ9 through **Ixian Hexagon**,
-ZETIC's own Hexagon runtime. Each SDK version is a GitHub Release; the model packages are on Hugging Face.
+This repository distributes the Ixian Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
+The SDK runs the LFM3 family and the d1 decision models on the Hexagon NPU of the IQ9 with ZETIC's own Hexagon
+runtime. Each SDK version is a GitHub Release; the model packages are on Hugging Face.
 
 | Device | SoC | Package target | OS |
 |---|---|---|---|
@@ -75,7 +75,7 @@ ssh iq9 'cd zsdk && LD_LIBRARY_PATH=lib bin/zetic_d1_cli demo --model models/d1-
 ```
 
 - The SDK picks `v73` (both NSPs) unless `--target v73-1nsp` / `LLMOptions::target` asks for the one-NSP package.
-- `info --verify` checks the package checksums and the target.
+- `info --verify` (both CLIs) checks every package file against its `SHA256SUMS` and the target.
 - Other commands: `chat -i` (multi-turn), `chat --media a.png+b.wav "prompt"` (media input), `chat --tts | --voice --out reply.wav`
   (speech output), `zetic_d1_cli info | demo | ask | seq`. Each prints its usage when run without arguments.
 
@@ -124,8 +124,10 @@ DecisionResult out = d1.systemOne(State::Text("I was charged twice and my parcel
 // out.answers[0].second.noul = P(yes); answers[1].second.choice = "billing"; answers[2].second.legend = "medium"
 ```
 
-All questions on one state go through one NPU pass (up to 16 per pass). Images and clips are `Part::Img(...)` /
-`Part::Aud(...)` in the third argument; they are encoded once per request.
+All questions on one state go through one NPU pass (up to 16 per pass). d1 answers three question types, all asked as
+text: yes / no (`Question::Noul`), one or several of a list (`Question::Choice`) and a score on a scale
+(`Question::Score`). Images (d1-2B, d1-Omni-2B) and audio clips (d1-Omni-2B) are `Part::Img(...)` / `Part::Aud(...)` in
+the third argument; they are encoded once per request. Images must be exactly 512 x 512 RGB, as for the LLM.
 
 ### Images, audio and video (LFM3-VL-2B, LFM3-Audio-2B, LFM3-Omni-2B)
 
@@ -140,8 +142,9 @@ Response t = asr.chat({Message::System("Perform ASR in English."),
                        Message::User({Part::Aud(Audio::fromWav("jfk.wav"))})}, greedy);
 ```
 
-- **Images and video frames must be exactly 512 x 512 RGB.** The SDK does no resize, letterbox or tiling; any other size
-  returns `Status::InvalidArgument`. `Image::fromFile` decodes PNG / JPEG / PPM / BMP; `Image::fromRgb` takes 8-bit RGB.
+- **Images and video frames must be exactly 512 x 512 RGB** (LLM and d1 alike). The SDK does no resize, letterbox or
+  tiling; any other size returns `Status::InvalidArgument` with, for example, "an image is 1920x1080; images must be
+  exactly 512x512 RGB (resize or letterbox before passing it; the SDK does not resample)". The CLIs print the same message. `Image::fromFile` decodes PNG / JPEG / PPM / BMP; `Image::fromRgb` takes 8-bit RGB.
 - **Audio:** `Audio::fromWav` or `Audio::fromPcm`; mixed to mono and resampled to 16 kHz. One audio part holds up to 30 s.
 - **Video:** `Part::Vid(Video::fromFrames(frames, fps))` with decoded 512 x 512 frames; the SDK samples 2 fps.
 - **Follow-up turns** re-send the whole history; the prefix cache keeps the media rows, so a text follow-up does not
