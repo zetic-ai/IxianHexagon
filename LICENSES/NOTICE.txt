@@ -1,5 +1,5 @@
-Third-party notices of the ZeticMLange Hexagon SDK for the Dragonwing IQ9
-==========================================================================
+Third-party notices of the Ixian Hexagon SDK for the Dragonwing IQ9
+====================================================================
 
 The SDK library (lib/libzetic_mlange_hexagon.so) and the CLIs (bin/) contain this third-party code:
 

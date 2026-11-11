@@ -1,8 +1,8 @@
-# ZeticMLange Hexagon SDK for the Dragonwing IQ9
+# Ixian Hexagon SDK for the Dragonwing IQ9
 
-This repository distributes the ZeticMLange Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
-The SDK runs the LFM3 family and the d1 decision models on the Hexagon NPU of the IQ9 through **Ixian Hexagon**,
-ZETIC's own Hexagon runtime. Each SDK version is a GitHub Release; the model packages are on Hugging Face.
+This repository distributes the Ixian Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
+The SDK runs the LFM3 family and the d1 decision models on the Hexagon NPU of the IQ9 with ZETIC's own Hexagon
+runtime. Each SDK version is a GitHub Release; the model packages are on Hugging Face.
 
 | Device | SoC | Package target | OS |
 |---|---|---|---|
