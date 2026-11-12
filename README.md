@@ -209,6 +209,31 @@ Response r = m.chat({Message::System("Perform TTS in American English using a fe
 
 A larger context costs memory; set it only as large as the app needs. d1 models keep their single pass. CLI: `--ctx <positions>`.
 
+## 5. Optional text speed smoke check
+
+The `bench text` CLI needs a text file whose first line is whitespace-separated tokenizer IDs. To make one from the
+public LFM3-1.7B package, run this **on the IQ9**, from the `zsdk` directory created above:
+
+```bash
+sudo apt install -y python3-venv
+python3 -m venv .bench-venv
+.bench-venv/bin/pip install tokenizers
+.bench-venv/bin/python - <<'PY'
+from pathlib import Path
+from tokenizers import Tokenizer
+
+tokenizer = Tokenizer.from_file("models/lfm3-1.7b/v73/tokenizer.json")
+ids = tokenizer.encode("Paris is in France. " * 400, add_special_tokens=False).ids
+Path("public_ids.txt").write_text(" ".join(map(str, ids)) + "\n")
+PY
+LD_LIBRARY_PATH=lib bin/zetic_lfm3_cli bench text --model models/lfm3-1.7b \
+  --ids public_ids.txt --n 1024 --new 256 --reps 1 --emit-module-job public_bench_job.txt
+```
+
+The CLI trims the input to approximately 1,024 prompt rows and reports first-token latency and decode tokens/s. This
+is a reproducible smoke check, not the workload used for published performance claims. Run it with other NPU users
+stopped if you want a useful speed measurement.
+
 ## Limits
 
 - One active model per process. To free the NPU, destroy the `LLM` / `Decision` object.
