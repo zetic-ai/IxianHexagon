@@ -29,20 +29,27 @@ runtime. Each SDK version is a GitHub Release; the model packages are on Hugging
 From the [Releases](https://github.com/zetic-ai/IxianHexagon/releases) page, or with the GitHub CLI:
 
 ```bash
-gh release download 0.2.0 -R zetic-ai/IxianHexagon -p 'zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz*'
-sha256sum -c zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz.sha256      # must print OK
-tar xzf zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz
+gh release download 0.2.1 -R zetic-ai/IxianHexagon -p 'ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz*'
+sha256sum -c ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz.sha256      # must print OK
+tar xzf ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz
 ```
+
+> [!NOTE]
+> 0.2.1 renames the SDK's code names; it has the same functionality as 0.2.0. Code written for 0.2.0 needs:
+> `zetic::mlange` → `zetic::ixian`, `find_package(ZeticMlangeHexagon)` → `find_package(IxianHexagon)`,
+> `zetic::mlange_hexagon` → `zetic::ixian_hexagon`, `libzetic_mlange_hexagon.so` → `libzetic_ixian_hexagon.so`,
+> `ZETIC_MLANGE_HEXAGON_VERSION` → `ZETIC_IXIAN_HEXAGON_VERSION`; the default model cache moves from `~/.cache/zetic_mlange`
+> to `~/.cache/zetic_ixian`. The model packages on Hugging Face are unchanged.
 
 <details>
 <summary>What's in the SDK</summary>
 
 | Path in the SDK | Content |
 |---|---|
-| `lib/libzetic_mlange_hexagon.so` | the SDK library (public API only) |
+| `lib/libzetic_ixian_hexagon.so` | the SDK library (public API only) |
 | `lib/libhexrt_v73_skel.so` | the DSP library; the SDK adds its directory to `ADSP_LIBRARY_PATH` |
 | `include/` | `zetic_llm.h`, `zetic_media.h`, `zetic_decision.h`, `zetic_selection.h`, `zetic_types.h` |
-| `lib/cmake/ZeticMlangeHexagon/` | CMake package config |
+| `lib/cmake/IxianHexagon/` | CMake package config |
 | `bin/zetic_lfm3_cli`, `bin/zetic_d1_cli`, `bin/zetic_quickstart` | test / demo CLIs |
 | `examples/quickstart` | example source |
 | `README.md` | the SDK guide (the sections below, in more detail) |
@@ -50,7 +57,7 @@ tar xzf zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz
 
 </details>
 
-The binaries are built with the Qualcomm OE eSDK (glibc 2.35 userland) and use the board's
+The binaries run on the IQ9's Ubuntu (glibc 2.35 or newer) and use the board's
 `/usr/lib/aarch64-linux-gnu/libcdsprpc.so.1`.
 
 ## 2. Download the models
@@ -84,7 +91,7 @@ hf download ZETIC-ai/d1-Omni-2B-IQ9 --local-dir models/d1-omni-2b
 ## 3. Run on the board (no build)
 
 ```bash
-scp -r zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9 iq9:zsdk
+scp -r ixian-hexagon-0.2.1-linux-arm64-qcom-iq9 iq9:zsdk
 scp -r models iq9:zsdk/
 ssh iq9 'cd zsdk && LD_LIBRARY_PATH=lib bin/zetic_lfm3_cli info --model models/lfm3-1.7b --verify'
 ssh iq9 'cd zsdk && LD_LIBRARY_PATH=lib bin/zetic_lfm3_cli chat --model models/lfm3-1.7b "What is the capital of France?"'
@@ -98,14 +105,27 @@ ssh iq9 'cd zsdk && LD_LIBRARY_PATH=lib bin/zetic_d1_cli demo --model models/d1-
 
 ## 4. Build your app
 
+Build on the IQ9 itself. Its Ubuntu already has `g++` and the board's `libcdsprpc.so.1`; install CMake once:
+
+```bash
+ssh iq9
+sudo apt install -y cmake
+cd zsdk
+cmake -S examples/quickstart -B build-quickstart -DCMAKE_PREFIX_PATH=$PWD/lib/cmake
+cmake --build build-quickstart
+build-quickstart/quickstart models/lfm3-1.7b "What is the capital of France?"
+```
+
+In your own `CMakeLists.txt`:
+
 ```cmake
-find_package(ZeticMlangeHexagon 0.2 CONFIG REQUIRED)   # -DCMAKE_PREFIX_PATH=<sdk>/lib/cmake
-target_link_libraries(my_app PRIVATE zetic::mlange_hexagon)
+find_package(IxianHexagon 0.2 CONFIG REQUIRED)   # cmake -DCMAKE_PREFIX_PATH=<sdk>/lib/cmake
+target_link_libraries(my_app PRIVATE zetic::ixian_hexagon)
 ```
 
 ```cpp
 #include <zetic_llm.h>
-using namespace zetic::mlange;
+using namespace zetic::ixian;
 
 LLM llm = LLM::fromPath("/home/user/zsdk/models/lfm3-1.7b");      // picks v73 on the IQ9
 std::vector<Message> history{Message::User("What is the capital of France?")};
@@ -118,7 +138,7 @@ history.push_back(Message::User("And its population?"));
 Response r2 = llm.chat(history);
 ```
 
-Keep `lib/libhexrt_v73_skel.so` next to `libzetic_mlange_hexagon.so`, or pass its directory as `LLMOptions::native_lib_dir`
+Keep `lib/libhexrt_v73_skel.so` next to `libzetic_ixian_hexagon.so`, or pass its directory as `LLMOptions::native_lib_dir`
 (`Decision::Options::native_lib_dir` for d1). A full example is in `examples/quickstart` of the SDK.
 
 - **Default sampling:** the model's generation config (temperature 0.1, top-k 50, repetition penalty 1.1), sampled on the CPU.
@@ -130,7 +150,7 @@ Keep `lib/libhexrt_v73_skel.so` next to `libzetic_mlange_hexagon.so`, or pass it
 
 ```cpp
 #include <zetic_decision.h>
-using namespace zetic::mlange;
+using namespace zetic::ixian;
 
 Decision d1 = Decision::fromPath("/home/user/zsdk/models/d1-2b");
 DecisionResult out = d1.systemOne(State::Text("I was charged twice and my parcel never arrived. Please refund one charge."), {
