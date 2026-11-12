@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/zetic-banner.png" alt="ZETIC: Faster AI. On your robot's hardware." width="100%">
+  <img src=".github/assets/zetic-banner.png" alt="ZETIC: More tasks. Done right." width="100%">
 </p>
 
 # Ixian Hexagon SDK for the Dragonwing IQ9
