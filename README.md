@@ -110,7 +110,7 @@ Build on the IQ9 itself. Its Ubuntu already has `g++` and the board's `libcdsprp
 ```bash
 ssh iq9
 sudo apt install -y cmake
-cd ~/zsdk
+cd zsdk
 cmake -S examples/quickstart -B build-quickstart -DCMAKE_PREFIX_PATH=$PWD/lib/cmake
 cmake --build build-quickstart
 build-quickstart/quickstart models/lfm3-1.7b "What is the capital of France?"
