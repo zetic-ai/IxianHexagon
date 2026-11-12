@@ -57,7 +57,7 @@ tar xzf ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz
 
 </details>
 
-The binaries are built with the Qualcomm OE eSDK (glibc 2.35 userland) and use the board's
+The binaries run on the IQ9's Ubuntu (glibc 2.35 or newer) and use the board's
 `/usr/lib/aarch64-linux-gnu/libcdsprpc.so.1`.
 
 ## 2. Download the models
@@ -105,8 +105,21 @@ ssh iq9 'cd zsdk && LD_LIBRARY_PATH=lib bin/zetic_d1_cli demo --model models/d1-
 
 ## 4. Build your app
 
+Build on the IQ9 itself. Its Ubuntu already has `g++` and the board's `libcdsprpc.so.1`; install CMake once:
+
+```bash
+ssh iq9
+sudo apt install -y cmake
+cd ~/zsdk
+cmake -S examples/quickstart -B build-quickstart -DCMAKE_PREFIX_PATH=$PWD/lib/cmake
+cmake --build build-quickstart
+build-quickstart/quickstart models/lfm3-1.7b "What is the capital of France?"
+```
+
+In your own `CMakeLists.txt`:
+
 ```cmake
-find_package(IxianHexagon 0.2 CONFIG REQUIRED)   # -DCMAKE_PREFIX_PATH=<sdk>/lib/cmake
+find_package(IxianHexagon 0.2 CONFIG REQUIRED)   # cmake -DCMAKE_PREFIX_PATH=<sdk>/lib/cmake
 target_link_libraries(my_app PRIVATE zetic::ixian_hexagon)
 ```
 
