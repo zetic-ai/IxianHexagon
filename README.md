@@ -26,10 +26,13 @@ runtime. Each SDK version is a GitHub Release; the model packages are on Hugging
 
 ## 1. Download the SDK
 
-From the [Releases](https://github.com/zetic-ai/IxianHexagon/releases) page, or with the GitHub CLI:
+Download the two files from the [0.2.1 release](https://github.com/zetic-ai/IxianHexagon/releases/tag/0.2.1), or use
+`curl` below. Neither route needs a GitHub account. The `gh release download` command requires `gh auth login` first,
+even for this public repository.
 
 ```bash
-gh release download 0.2.1 -R zetic-ai/IxianHexagon -p 'ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz*'
+curl -fL -O https://github.com/zetic-ai/IxianHexagon/releases/download/0.2.1/ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz
+curl -fL -O https://github.com/zetic-ai/IxianHexagon/releases/download/0.2.1/ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz.sha256
 sha256sum -c ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz.sha256      # must print OK
 tar xzf ixian-hexagon-0.2.1-linux-arm64-qcom-iq9.tar.gz
 ```
@@ -74,8 +77,13 @@ models), so the download is the model directory the SDK opens.
 | d1-2B | [ZETIC-ai/d1-2B-IQ9](https://huggingface.co/ZETIC-ai/d1-2B-IQ9) | text, image | decisions | `Decision` | `v73` |
 | d1-Omni-2B | [ZETIC-ai/d1-Omni-2B-IQ9](https://huggingface.co/ZETIC-ai/d1-Omni-2B-IQ9) | text, image, audio | decisions | `Decision` | `v73` |
 
+Use a Python virtual environment so installation also works on Ubuntu 24.04, where system-wide `pip install` is
+blocked. On Ubuntu, install `python3-venv` first if it is missing (`sudo apt install -y python3-venv`).
+
 ```bash
-pip install -U huggingface_hub                     # provides the `hf` command
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -U huggingface_hub             # provides the `hf` command
 hf download ZETIC-ai/LFM3-1.7B-IQ9 --local-dir models/lfm3-1.7b
 hf download ZETIC-ai/LFM3-VL-2B-IQ9 --local-dir models/lfm3-vl-2b
 hf download ZETIC-ai/LFM3-Audio-2B-IQ9 --local-dir models/lfm3-audio-2b
@@ -87,8 +95,13 @@ hf download ZETIC-ai/d1-Omni-2B-IQ9 --local-dir models/d1-omni-2b
 - Only the two-NSP package: add `--include "v73/*"`. Sign in with `hf auth login` if your account needs access.
 - Each package lists its files in `SHA256SUMS`; `info --verify` (below) checks them on the board.
 - The model weights are under the LFM Open License v1.0 (Liquid AI); see the `LICENSE` file of each Hugging Face repository.
+- All six complete model directories use about 26 GB. Check free space on both the download computer and IQ9 before
+  copying them. If the board has less space, copy and test one model directory at a time.
 
 ## 3. Run on the board (no build)
+
+In the commands below, `iq9` means your board's SSH destination. Replace it with, for example,
+`ubuntu@<your-board-address>`, or configure an SSH alias named `iq9`. SSH access to the board must already work.
 
 ```bash
 scp -r ixian-hexagon-0.2.1-linux-arm64-qcom-iq9 iq9:zsdk
