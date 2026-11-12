@@ -1,16 +1,28 @@
+<p align="center">
+  <img src=".github/assets/zetic-banner.png" alt="ZETIC: Faster AI. On your robot's hardware." width="100%">
+</p>
+
 # Ixian Hexagon SDK for the Dragonwing IQ9
+
+[![Release](https://img.shields.io/github/v/release/zetic-ai/IxianHexagon?label=release&color=16867d)](https://github.com/zetic-ai/IxianHexagon/releases)
+![Dragonwing IQ9 (QCS9075)](https://img.shields.io/badge/Dragonwing_IQ9_%28QCS9075%29-2b3137)
+![Hexagon NPU](https://img.shields.io/badge/Hexagon_NPU-2b3137)
+[![Models on Hugging Face](https://img.shields.io/badge/Models-Hugging_Face-16867d?logo=huggingface&logoColor=white)](https://huggingface.co/collections/ZETIC-ai/lfm3-and-d1-on-dragonwing-iq9-6af400b9da045ed7cfa23b0e)
 
 This repository distributes the Ixian Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
 The SDK runs the LFM3 family and the d1 decision models on the Hexagon NPU of the IQ9 with ZETIC's own Hexagon
 runtime. Each SDK version is a GitHub Release; the model packages are on Hugging Face.
+
+**[Releases](https://github.com/zetic-ai/IxianHexagon/releases) · [Models on Hugging Face](https://huggingface.co/collections/ZETIC-ai/lfm3-and-d1-on-dragonwing-iq9-6af400b9da045ed7cfa23b0e) · [zetic.ai](https://zetic.ai)**
 
 | Device | SoC | Package target | OS |
 |---|---|---|---|
 | Dragonwing IQ9, both NSPs (default) | QCS9075 | `v73` | Ubuntu 24.04 |
 | Dragonwing IQ9, one NSP | QCS9075 | `v73-1nsp` (`LLMOptions::target`, CLI `--target`) | the same |
 
-The SDK runs on the IQ9 only. On any other device, `LLM::fromPath` / `Decision::fromPath` fail with
-`Status::Unsupported`. Packages for any other target or model are refused the same way.
+> [!NOTE]
+> The SDK runs on the IQ9 only. On any other device, `LLM::fromPath` / `Decision::fromPath` fail with
+> `Status::Unsupported`. Packages for any other target or model are refused the same way.
 
 ## 1. Download the SDK
 
@@ -22,6 +34,9 @@ sha256sum -c zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz.sha256      
 tar xzf zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz
 ```
 
+<details>
+<summary>What's in the SDK</summary>
+
 | Path in the SDK | Content |
 |---|---|
 | `lib/libzetic_mlange_hexagon.so` | the SDK library (public API only) |
@@ -32,6 +47,8 @@ tar xzf zetic-mlange-hexagon-0.2.0-linux-arm64-qcom-iq9.tar.gz
 | `examples/quickstart` | example source |
 | `README.md` | the SDK guide (the sections below, in more detail) |
 | `LICENSES/`, `PROVENANCE.json` | third-party licenses, build provenance (source commit, toolchain versions) |
+
+</details>
 
 The binaries are built with the Qualcomm OE eSDK (glibc 2.35 userland) and use the board's
 `/usr/lib/aarch64-linux-gnu/libcdsprpc.so.1`.
@@ -142,9 +159,11 @@ Response t = asr.chat({Message::System("Perform ASR in English."),
                        Message::User({Part::Aud(Audio::fromWav("jfk.wav"))})}, greedy);
 ```
 
-- **Images and video frames must be exactly 512 x 512 RGB** (LLM and d1 alike). The SDK does no resize, letterbox or
-  tiling; any other size returns `Status::InvalidArgument` with, for example, "an image is 1920x1080; images must be
-  exactly 512x512 RGB (resize or letterbox before passing it; the SDK does not resample)". The CLIs print the same message. `Image::fromFile` decodes PNG / JPEG / PPM / BMP; `Image::fromRgb` takes 8-bit RGB.
+> [!IMPORTANT]
+> **Images and video frames must be exactly 512 x 512 RGB** (LLM and d1 alike). The SDK does no resize, letterbox or
+> tiling; any other size returns `Status::InvalidArgument` with, for example, "an image is 1920x1080; images must be
+> exactly 512x512 RGB (resize or letterbox before passing it; the SDK does not resample)". The CLIs print the same message. `Image::fromFile` decodes PNG / JPEG / PPM / BMP; `Image::fromRgb` takes 8-bit RGB.
+
 - **Audio:** `Audio::fromWav` or `Audio::fromPcm`; mixed to mono and resampled to 16 kHz. One audio part holds up to 30 s.
 - **Video:** `Part::Vid(Video::fromFrames(frames, fps))` with decoded 512 x 512 frames; the SDK samples 2 fps.
 - **Follow-up turns** re-send the whole history; the prefix cache keeps the media rows, so a text follow-up does not
@@ -177,6 +196,9 @@ A larger context costs memory; set it only as large as the app needs. d1 models 
 
 ## Licenses
 
+<details>
+<summary>Third-party licenses</summary>
+
 Third-party code in the SDK library and the CLIs; the texts are in [`LICENSES/`](LICENSES) here and in the SDK tarball
 (start with [`LICENSES/NOTICE.txt`](LICENSES/NOTICE.txt)):
 
@@ -194,8 +216,19 @@ Third-party code in the SDK library and the CLIs; the texts are in [`LICENSES/`]
 - The LFM3 and d1 model weights are not part of the SDK; they are under the LFM Open License v1.0 (Liquid AI), as stated
   in each Hugging Face repository.
 
+</details>
+
 ## Integrity and provenance
+
+<details>
+<summary>Release integrity and build provenance</summary>
 
 Every release carries the SDK tarball and its `.sha256`. `PROVENANCE.json` in the tarball records the source commit,
 the build infrastructure commit, the tokenizers-cpp pin and the toolchain versions. Binary artifacts are release assets
 only; they are never committed to this repository.
+
+</details>
+
+---
+
+<p align="center">Packaged by <a href="https://zetic.ai">ZETIC</a> · <a href="https://ixian.zetic.ai">ixian-bench</a> · ✉️ contact@zetic.ai</p>
