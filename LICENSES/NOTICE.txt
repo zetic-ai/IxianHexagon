@@ -1,7 +1,7 @@
 Third-party notices of the Ixian Hexagon SDK for the Dragonwing IQ9
 ====================================================================
 
-The SDK library (lib/libzetic_mlange_hexagon.so) and the CLIs (bin/) contain this third-party code:
+The SDK library (lib/libzetic_ixian_hexagon.so) and the CLIs (bin/) contain this third-party code:
 
 - tokenizers-cpp (MLC AI): Apache-2.0. Text: tokenizers-cpp-LICENSE.txt. Its static library links:
     - the Hugging Face "tokenizers" Rust crate 0.21.2 (Apache-2.0) and its crates.io dependencies, each under MIT and / or

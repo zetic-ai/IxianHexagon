@@ -1,4 +1,4 @@
-Rust code in the tokenizers-cpp static library (libtokenizers_c.a, linked into libzetic_mlange_hexagon.so and the CLIs)
+Rust code in the tokenizers-cpp static library (libtokenizers_c.a, linked into libzetic_ixian_hexagon.so and the CLIs)
 ======================================================================================================================
 Source: tokenizers-cpp rust/Cargo.lock (sha256 c3df4582b13bb9a674861e8848f3d6bb745b46401a8861411ab7d0430ea8442e), every package of the
 lock file; licenses from `cargo metadata --locked --filter-platform aarch64-unknown-linux-gnu`.
