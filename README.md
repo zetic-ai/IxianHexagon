@@ -107,12 +107,13 @@ $SDK/bin/zetic_d1_quickstart models/d1-omni-2b "A customer sent a photo and a re
 - `zetic_d1_quickstart` asks three ticket questions about the text in one NPU pass: `refund` (yes / no, prints P(yes)),
   `team` (billing or shipping) and `urgency` (low / medium / high). With an image it adds `animal` ("Does the image show an
   animal?"); with audio it adds `speech` ("Is a person speaking in the audio?") and `topic` (country / sports / cooking).
-  Measured on the IQ9 with the commands above:
+  Measured on the IQ9 with the commands above (before the 2,048-row pass change below; these requests fit one pass
+  either way):
 
   | Input | Answers | Tokens, time |
   |---|---|---|
   | default ticket | refund P(yes) 0.943, team billing (0.513), urgency medium (0.605) | 117, 70 ms |
-  | `cats.png` | animal P(yes) 0.930 (measured with an earlier wording, "Does the attached media show or mention an animal?") | |
+  | `cats.png` | animal P(yes) 0.926 | 393, 286 ms |
   | `jfk.wav` | speech P(yes) 0.716, topic country (0.978) | 308, 188 ms |
   | `cats.png` + `jfk.wav` | animal P(yes) 0.927, speech P(yes) **0.475**, topic country (0.973) | 592, 398 ms |
 
@@ -182,7 +183,8 @@ The binaries run on the IQ9's Ubuntu (glibc 2.35 or newer) and use the board's
 <details>
 <summary>Upgrading from 0.2.0 / 0.2.1</summary>
 
-0.2.2 adds `examples/d1_quickstart` and fixes the examples, CLI defaults and documentation; the library behaves as in
+0.2.2 adds `examples/d1_quickstart`, lets a d1 request use up to 2,048 rows per pass (1,024 before; the d1 packages on
+Hugging Face are unchanged) and fixes the examples, CLI defaults and documentation; otherwise the library behaves as in
 0.2.1. 0.2.1 renamed the SDK's code names; code written for 0.2.0 needs:
 `zetic::mlange` → `zetic::ixian`, `find_package(ZeticMlangeHexagon)` → `find_package(IxianHexagon)`,
 `zetic::mlange_hexagon` → `zetic::ixian_hexagon`, `libzetic_mlange_hexagon.so` → `libzetic_ixian_hexagon.so`,
@@ -309,9 +311,10 @@ d1 answers three question types, all asked as text: yes / no (`Question::Noul`),
 (`Question::Choice`) and a score on a scale (`Question::Score`). It does not write text, speech or chat replies.
 
 - **One NPU pass** answers up to 16 questions on one state; more questions take more passes. The state, its media (an
-  image is 256 rows, a 30 s clip 375) and the pass's questions must fit one pass. With SDK 0.2.2 and the current d1
-  packages a pass holds 1,024 rows; read the limit from `Capabilities::max_context` instead of hard-coding it, since
-  later versions may raise it.
+  image is 256 rows, a 30 s clip 375) and the pass's questions must fit one pass. With SDK 0.2.2 and the current
+  0.2.0 d1 packages a pass holds up to **2,048 rows** (the SDK raises the packages' 1,024-row setting to the
+  2,048-position context at load). There is no setting for it: read `Capabilities::max_context` instead of
+  hard-coding the number.
 - d1 runs on **one NSP** (`ModelInfo::nsp_count` = 1), also from the `v73` package.
 - Images (d1-2B, d1-Omni-2B) and audio clips (d1-Omni-2B) are `Part::Img(...)` / `Part::Aud(...)` in the third argument;
   they are encoded once per request. Images must be exactly 512 x 512 RGB. d1 takes no video (`Status::Unsupported`).
@@ -352,14 +355,25 @@ Response r = m.chat({Message::System("Perform TTS in American English using a fe
 
 ### Context length
 
+**LFM3 models** hold 2,048 positions (prompt + reply) by default. Set a larger context when you load the model, with
+`LLMOptions::max_context` or the CLI's `--ctx`:
+
+```cpp
+LLM::Options opt;
+opt.max_context = 8192;                                             // positions; 0 = 2,048
+LLM llm = LLM::fromPath("models/lfm3-omni-2b", opt);               // CLI: zetic_lfm3_cli chat --ctx 8192 ...
+```
+
 | LFM3 packages | Default (`max_context = 0`) | Largest `max_context` |
 |---|---:|---:|
 | `v73` (two NSPs) | 2,048 | 131,072 |
 | `v73-1nsp` (one NSP) | 2,048 | 4,096 |
 
-A larger context costs memory; set it only as large as the app needs. CLI: `--ctx <positions>`. Prompt rows plus the
-reserved reply (`max_tokens`, speech frames) must fit, or the request returns `Status::ContextExceeded`. d1 models keep
-their own pass limit (`Capabilities::max_context`; 1,024 rows in SDK 0.2.2).
+A larger context costs memory; set it only as large as the app needs. The reply is reserved up front: prompt rows +
+`max_tokens` (+ speech frames) must fit, or the request returns `Status::ContextExceeded`.
+
+**d1 models** have no context option (`Decision::Options` has none): a request takes up to 2,048 rows per pass in
+SDK 0.2.2. Read the limit from `Capabilities::max_context` (`zetic_d1_cli info` prints it as `max rows`).
 
 ## Common errors
 
@@ -368,7 +382,8 @@ their own pass limit (`Capabilities::max_context`; 1,024 rows in SDK 0.2.2).
 | `DeviceError: hexrt_lib_open: map: 0x1` at load | The DSP could not map the model, most often right after another NPU process has exited. | Wait a few seconds and run the command again. |
 | `[hexrt] weights.bin (... MB) did not map as one buffer (0x1): N pieces of <= 512 MB` | A warning: the weights are mapped in pieces instead. | Nothing; the run continues normally. |
 | `InvalidArgument: an image is WxH; images must be exactly 512x512 RGB` | The SDK does not resize images or video frames. | Resize or letterbox to 512 x 512 first (the samples are 512 x 512). |
-| `ContextExceeded: the request needs N prompt rows + M reply rows, the context holds 2048` | The prompt plus the reserved reply does not fit the context. | Lower `max_tokens` / `max_audio_seconds`, shorten the history, or load with a larger `max_context` (`--ctx`). |
+| `ContextExceeded: the request needs N prompt rows + M reply rows, the context holds 2048` (LFM3) | The prompt plus the reserved reply does not fit the context. | Load with a larger `max_context` (CLI `--ctx 4096`), or lower `max_tokens` / `max_audio_seconds`, or shorten the history. |
+| `ContextExceeded: rows: question 0 with its state and media is N rows, a d1 pass holds 2048` (d1) | One question with its state and media is longer than a d1 pass. | Shorten the state text or use fewer / shorter media; d1 has no larger setting. |
 | `Unsupported: d1 takes no video input (images and audio only)` | d1 models take text, images and (d1-Omni-2B) audio only. | Pass a few frames as images, or use LFM3-VL-2B / LFM3-Omni-2B for video. |
 | `... is a d1 decision package: load it with Decision::fromPath` | A d1 model was opened with `LLM` (for example with `zetic_quickstart`). | Use `zetic_d1_quickstart` / `zetic_d1_cli`, or `Decision::fromPath` in code. |
 | `cannot read <file>` from `eval` / `bench` | The preset's input file is not in the `--data` folder. | Use `--data <samples folder>`, or give your own file with `--media` / `--only`. |
