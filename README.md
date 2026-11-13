@@ -30,10 +30,11 @@ inputs for the examples.
 Everything below runs on the IQ9 itself (log in with `ssh`), in one working folder. The board's Ubuntu has `git`,
 `python3` and `g++`, but no `pip`, `hf` or `gh`; step 2 installs the model downloader in a local Python environment.
 
-**1. Get the SDK and the sample inputs.**
+**1. Check the free space, then get the SDK and the sample inputs.**
 
 ```bash
 mkdir ixh && cd ixh
+df -h .                                 # "Avail" should be 7 GB or more for the two Omni models below
 curl -LO https://github.com/zetic-ai/IxianHexagon/releases/download/0.2.2/ixian-hexagon-0.2.2-linux-arm64-qcom-iq9.tar.gz
 curl -LO https://github.com/zetic-ai/IxianHexagon/releases/download/0.2.2/ixian-hexagon-0.2.2-linux-arm64-qcom-iq9.tar.gz.sha256
 sha256sum -c ixian-hexagon-0.2.2-linux-arm64-qcom-iq9.tar.gz.sha256      # must print OK
@@ -43,7 +44,9 @@ SDK=$PWD/ixian-hexagon-0.2.2-linux-arm64-qcom-iq9
 S=$PWD/IxianHexagon/samples
 ```
 
-`SDK` and `S` are only shortcuts for the commands below; set them again in a new shell.
+`SDK` and `S` are only shortcuts for the commands below; set them again in a new shell. The model packages are large:
+LFM3-Omni-2B `v73` is about 3.6 GB and d1-Omni-2B `v73` about 2.4 GB. The SDK, the samples and the Python environment
+add about 0.2 GB. With less free space, free some first or download one model at a time.
 
 **2. Install the Hugging Face downloader (once).**
 
@@ -52,14 +55,17 @@ python3 -m venv .venv                   # "ensurepip is not available": sudo apt
 .venv/bin/pip install -U huggingface_hub
 ```
 
-**3. Download the models.** One Hugging Face repository per model; `--include "v73/*"` takes only the two-NSP package.
+**3. Download the models.** One Hugging Face repository per model. `v73` is the IQ9 package; LFM3 models run it on both
+NSPs, d1 models on one. `--include "v73/*"` skips the LFM3 models' optional one-NSP `v73-1nsp` package.
 
 ```bash
 .venv/bin/hf download ZETIC-ai/LFM3-Omni-2B-IQ9 --include "v73/*" --local-dir models/lfm3-omni-2b    # 3.6 GB
 .venv/bin/hf download ZETIC-ai/d1-Omni-2B-IQ9 --include "v73/*" --local-dir models/d1-omni-2b        # 2.4 GB
 ```
 
-If a download stops or the connection drops, run the same command again; it continues. All six models:
+If a download stops (connection lost, Ctrl-C, disk full), run the same command again: it resumes. The partly downloaded
+files wait in `models/<model>/.cache/huggingface/download/` as `*.incomplete`. To give up on a model and get the space
+back, delete its folder (`rm -rf models/lfm3-omni-2b`). `du -sh models/*` shows what is already there. All six models:
 
 | Model | Hugging Face | Input | Output | API | Targets |
 |---|---|---|---|---|---|
@@ -83,17 +89,29 @@ $SDK/bin/zetic_d1_cli info --model models/d1-omni-2b --verify
 **5. Run the examples on the samples.** The prebuilt examples are in `bin/`; their source is in `examples/`.
 
 ```bash
+# LFM3-Omni-2B: text, image, audio (a spoken question), image + audio
 $SDK/bin/zetic_quickstart models/lfm3-omni-2b "What is the capital of France?"
 $SDK/bin/zetic_quickstart models/lfm3-omni-2b "What is in this picture?" $S/cats.png
 $SDK/bin/zetic_quickstart models/lfm3-omni-2b "Answer the question in the audio." $S/question.wav
 $SDK/bin/zetic_quickstart models/lfm3-omni-2b "Answer the question in the audio." $S/cats.png $S/question_cats.wav
+# d1-Omni-2B: text, image, audio, image + audio
 $SDK/bin/zetic_d1_quickstart models/d1-omni-2b
 $SDK/bin/zetic_d1_quickstart models/d1-omni-2b "The photo shows what arrived instead of my order." $S/cats.png
+$SDK/bin/zetic_d1_quickstart models/d1-omni-2b "A customer sent this recording." $S/jfk.wav
+$SDK/bin/zetic_d1_quickstart models/d1-omni-2b "A customer sent a photo and a recording." $S/cats.png $S/jfk.wav
 ```
 
-Each `zetic_quickstart` run answers, then asks one follow-up question that reuses the cached first turn (the media are not
-encoded again). `zetic_d1_quickstart` asks a yes / no, a choice and a score question in one NPU pass and prints the
-answers with their probabilities. Build the same examples from source (CMake once: `sudo apt install -y cmake`):
+- `zetic_quickstart` answers, then asks one follow-up that reuses the cached first turn (the media are not encoded again).
+  The follow-up depends on the input: the image's colors (image, or image + audio), a one-sentence summary (audio only),
+  "And its population?" (the default France question) or "Say that again in one sentence." (your own text).
+- `zetic_d1_quickstart` asks three ticket questions about the text in one NPU pass: `refund` (yes / no, prints P(yes)),
+  `team` (billing or shipping) and `urgency` (low / medium / high). With an image it adds `animal` ("Does the image show an
+  animal?", yes for `cats.png`); with audio it adds `speech` ("Is a person speaking?") and `topic` (country / sports /
+  cooking), which for `jfk.wav` should come out as yes and `country`. The default ticket gives refund P(yes) about 0.94.
+  For audio alone, without a ticket text, `zetic_d1_cli ask --model models/d1-omni-2b --requests $S/requests_audio.jsonl --verbose`
+  asks the same two audio questions (on the IQ9: speech P(yes) 0.86, topic `country` 0.98).
+
+To build the same examples from source (CMake once: `sudo apt install -y cmake`):
 
 ```bash
 cmake -S $SDK/examples/quickstart -B build-quickstart -DCMAKE_PREFIX_PATH=$SDK/lib/cmake
@@ -103,6 +121,27 @@ cmake -S $SDK/examples/d1_quickstart -B build-d1 -DCMAKE_PREFIX_PATH=$SDK/lib/cm
 cmake --build build-d1
 build-d1/d1_quickstart models/d1-omni-2b
 ```
+
+When the SDK folder changes (a new version, another path), configure into a **new** build folder (or delete the old one):
+CMake keeps the old SDK path in its cache, so configure fails or the old binary keeps running.
+
+### Your own images, audio and video
+
+Images must be exactly 512 x 512 RGB, audio WAV clips up to 30 s, and video a folder of 512 x 512 frames. `ffmpeg`
+prepares all three (`sudo apt install -y ffmpeg` once):
+
+```bash
+# a photo -> 512 x 512 PNG, letterboxed (the whole photo kept, black bars); "scale=512:512" alone stretches it instead
+ffmpeg -i photo.jpg -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2" -frames:v 1 photo_512.png
+# any audio (m4a, mp3, wav, ...) -> 16 kHz mono 16-bit WAV
+ffmpeg -i voice.m4a -ac 1 -ar 16000 -c:a pcm_s16le voice_16k.wav
+# audio longer than 30 s -> 29 s pieces part_000.wav, part_001.wav, ... (pass them as several audio parts)
+ffmpeg -i long.m4a -f segment -segment_time 29 -ac 1 -ar 16000 -c:a pcm_s16le part_%03d.wav
+# a video -> 512 x 512 frames at 2 per second, then ask about the folder
+mkdir frames && ffmpeg -i clip.mp4 -vf "fps=2,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2" frames/frame_%03d.png
+$SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b --media frames --video-fps 2 "Describe what happens in this video."
+```
+
 
 > [!IMPORTANT]
 > **Images and video frames must be exactly 512 x 512 RGB** (LLM and d1 alike); the SDK does not resize. Audio is WAV at
@@ -143,15 +182,24 @@ to `~/.cache/zetic_ixian`. The model packages on Hugging Face are unchanged.
 
 ## Command-line tools
 
-- A model directory holds one subdirectory per target (`models/lfm3-omni-2b/v73/`). The SDK picks `v73` (both NSPs) unless
-  `--target v73-1nsp` / `LLMOptions::target` asks for the one-NSP package.
-- `zetic_lfm3_cli`: `chat "prompt"`, `chat -i` (multi-turn; `/exit` or Ctrl-D ends it), `chat --media a.png+b.wav "prompt"`
-  (media input), `chat --tts | --voice --out reply.wav` (speech output), `eval ...`, `bench ...`.
-  `zetic_d1_cli`: `info | demo | ask | serve | seq`. Each prints its usage when run without arguments.
-- With `--data $S` the CLI presets read the samples:
+- A model directory holds one subdirectory per target (`models/lfm3-omni-2b/v73/`). The SDK picks `v73` unless
+  `--target v73-1nsp` / `LLMOptions::target` asks for an LFM3 model's one-NSP package.
+- `zetic_lfm3_cli` commands: `chat`, `eval`, `bench`, `info`; `zetic_d1_cli`: `info`, `demo`, `ask`, `serve`, `seq`. Each
+  prints its usage when run without arguments. In the usage text `a | b` means "a or b", not a shell pipe.
+- Chat, speech output and voice chat:
 
   ```bash
-  $SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b --media $S/cats.png "How many cats are in the image?"
+  $SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b "What is the capital of France?"
+  $SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b -i                     # multi-turn; /exit or Ctrl-D ends it
+  $SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b --media $S/cats.png+$S/jfk.wav "Describe the image, then repeat what the speaker says."
+  $SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b --tts --out reply_tts.wav "The quick brown fox jumps over the lazy dog."
+  $SDK/bin/zetic_lfm3_cli chat --model models/lfm3-omni-2b --voice --media $S/question.wav --out reply_voice.wav "Answer the question in the audio."
+  ```
+
+  `--tts` speaks the given text; `--voice` answers in text and speech together. Both write a 24 kHz mono WAV (`--out`).
+- With `--data $S` the eval / bench presets read the samples:
+
+  ```bash
   $SDK/bin/zetic_lfm3_cli bench vl --model models/lfm3-omni-2b --data $S          # cats.ppm, "Describe the image in detail."
   $SDK/bin/zetic_lfm3_cli bench ia --model models/lfm3-omni-2b --data $S          # cats + jfk.wav
   $SDK/bin/zetic_lfm3_cli bench media --model models/lfm3-omni-2b --data $S --media jfk.wav --system "Perform ASR in English."
@@ -161,15 +209,29 @@ to `~/.cache/zetic_ixian`. The model packages on Hugging Face are unchanged.
   $SDK/bin/zetic_lfm3_cli eval video --model models/lfm3-omni-2b --data $S       # clip1/: 72 frames at 24 fps
   $SDK/bin/zetic_lfm3_cli bench text --model models/lfm3-omni-2b --ids $S/jfk_inaugural_ids.txt
   $SDK/bin/zetic_lfm3_cli eval ppl --model models/lfm3-omni-2b --ids $S/jfk_inaugural_ids.txt
+  ```
+
+  - The samples hold no 30 s lecture or other clips, so `bench asr` / `bench asr30` and `eval asr` / `omni5` / `mt` need
+    your own files (`--media`, `--only`).
+  - `eval video` stops each answer at 96 tokens (`finish length`); add `--max-tokens 256` for a full description.
+  - `bench text` and `eval ppl` read only the start of the ids file: a prompt of about 1,024 rows (`--n`); `eval ppl` then
+    scores the next 257 tokens (`--score`).
+  - `bench text` writes its prompt ids to `./zsdk_bench_ids.txt`. `bench tts` / `bench voice` write one WAV per repetition
+    (4 by default, `--reps`) under `./zsdk_speech_ab/` (`--work` changes it).
+- d1 from files or from another program:
+
+  ```bash
   $SDK/bin/zetic_d1_cli ask --model models/d1-omni-2b --requests $S/requests.jsonl --out answers.tsv --verbose
   $SDK/bin/zetic_d1_cli serve --model models/d1-omni-2b < $S/requests.jsonl
   ```
 
-  The samples hold no 30 s lecture or other clips, so `bench asr` / `bench asr30` and `eval asr` / `omni5` / `mt` need your
-  own files (`--media`, `--only`). `bench text` writes its prompt ids to `./zsdk_bench_ids.txt`; the speech benches write
-  their WAV files under `./zsdk_speech_ab/` (`--work` changes it).
-- `ask --out` writes one tab-separated line per request (not JSON Lines): `<name> TAB <seconds> TAB {"answers": ...}`.
-  `serve` prints one JSON line per request, after a first `{"event": "ready", ...}` line.
+  - A request is one JSON object per line (see `$S/requests.jsonl`): `state`, `questions`, optional `images` / `files`
+    (base64 data URLs), `name` and `id`.
+  - `ask --out` writes one tab-separated line per request (not JSON Lines): `<name> TAB <seconds> TAB {"answers": ...}`.
+  - `serve` is not an HTTP server: it reads JSON Lines on stdin and writes JSON Lines on stdout, one process per model
+    (the model stays loaded until stdin ends). The first line is `{"event": "ready", ...}`; then each request gets one
+    answer line, in the order the requests arrive, carrying the request's `id` (`null` when the request has none). Match
+    answers by `id`, or by order. Logs go to stderr.
 - `rtf` (speech benches, `Timings::realtime_factor`) = seconds of audio produced / seconds spent producing it. Above 1 is
   faster than real time: `rtf 3.2x` made 2.4 s of speech in 0.75 s.
 
@@ -300,6 +362,8 @@ their own pass limit (`Capabilities::max_context`; 1,024 rows in SDK 0.2.2).
 | `... is a d1 decision package: load it with Decision::fromPath` | A d1 model was opened with `LLM` (for example with `zetic_quickstart`). | Use `zetic_d1_quickstart` / `zetic_d1_cli`, or `Decision::fromPath` in code. |
 | `cannot read <file>` from `eval` / `bench` | The preset's input file is not in the `--data` folder. | Use `--data <samples folder>`, or give your own file with `--media` / `--only`. |
 | `hf: command not found`, `pip: command not found` | The board has no system `pip` / `hf`. | Use the virtual environment of step 2: `.venv/bin/pip`, `.venv/bin/hf`. |
+| `No space left on device`, or `hf download` stops making progress | The disk is full (`df -h .`). | Free space, delete partial downloads (`models/<model>/.cache/huggingface/download/*.incomplete`), then rerun the same `hf download`. |
+| CMake configure fails, or a rebuilt example still behaves like the old one | The build folder's cache points at another SDK folder. | Configure into a new build folder (`-B build-new`) or delete the old one. |
 | `error while loading shared libraries: libzetic_ixian_hexagon.so` | An app built elsewhere does not find the library. | Build with the CMake package as above, or set `LD_LIBRARY_PATH=<sdk>/lib`. |
 
 ## Limits
