@@ -106,10 +106,21 @@ $SDK/bin/zetic_d1_quickstart models/d1-omni-2b "A customer sent a photo and a re
   "And its population?" (the default France question) or "Say that again in one sentence." (your own text).
 - `zetic_d1_quickstart` asks three ticket questions about the text in one NPU pass: `refund` (yes / no, prints P(yes)),
   `team` (billing or shipping) and `urgency` (low / medium / high). With an image it adds `animal` ("Does the image show an
-  animal?", yes for `cats.png`); with audio it adds `speech` ("Is a person speaking?") and `topic` (country / sports /
-  cooking), which for `jfk.wav` should come out as yes and `country`. The default ticket gives refund P(yes) about 0.94.
-  For audio alone, without a ticket text, `zetic_d1_cli ask --model models/d1-omni-2b --requests $S/requests_audio.jsonl --verbose`
-  asks the same two audio questions (on the IQ9: speech P(yes) 0.86, topic `country` 0.98).
+  animal?"); with audio it adds `speech` ("Is a person speaking in the audio?") and `topic` (country / sports / cooking).
+  Measured on the IQ9 with the commands above:
+
+  | Input | Answers | Tokens, time |
+  |---|---|---|
+  | default ticket | refund P(yes) 0.943, team billing (0.513), urgency medium (0.605) | 117, 70 ms |
+  | `cats.png` | animal P(yes) 0.930 (measured with an earlier wording, "Does the attached media show or mention an animal?") | |
+  | `jfk.wav` | speech P(yes) 0.716, topic country (0.978) | 308, 188 ms |
+  | `cats.png` + `jfk.wav` | animal P(yes) 0.927, speech P(yes) **0.475**, topic country (0.973) | 592, 398 ms |
+
+  The answers are probabilities, not verdicts. The same recording gets speech P(yes) 0.72 alone but 0.48 next to a photo,
+  and team billing wins over shipping by 0.513 to 0.487: do not read every P(yes) against a fixed 0.5. Calibrate the
+  threshold per question on your own examples, and ask about one medium per question where you can.
+  `zetic_d1_cli ask --model models/d1-omni-2b --requests $S/requests_audio.jsonl --verbose` asks the two audio questions
+  about `jfk.wav` with no text at all (on the IQ9: speech P(yes) 0.86, topic country 0.98).
 
 To build the same examples from source (CMake once: `sudo apt install -y cmake`):
 
