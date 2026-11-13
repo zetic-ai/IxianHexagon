@@ -235,8 +235,10 @@ DecisionResult out = d1.systemOne(State::Text("I was charged twice and my parcel
 d1 answers three question types, all asked as text: yes / no (`Question::Noul`), one or several of a list
 (`Question::Choice`) and a score on a scale (`Question::Score`). It does not write text, speech or chat replies.
 
-- **One NPU pass** answers up to 16 questions on one state; more questions take more passes. A pass holds up to
-  **1,024 rows**: the state, its media (an image is 256 rows, a 30 s clip 375) and the pass's questions together.
+- **One NPU pass** answers up to 16 questions on one state; more questions take more passes. The state, its media (an
+  image is 256 rows, a 30 s clip 375) and the pass's questions must fit one pass. With SDK 0.2.2 and the current d1
+  packages a pass holds 1,024 rows; read the limit from `Capabilities::max_context` instead of hard-coding it, since
+  later versions may raise it.
 - d1 runs on **one NSP** (`ModelInfo::nsp_count` = 1), also from the `v73` package.
 - Images (d1-2B, d1-Omni-2B) and audio clips (d1-Omni-2B) are `Part::Img(...)` / `Part::Aud(...)` in the third argument;
   they are encoded once per request. Images must be exactly 512 x 512 RGB. d1 takes no video (`Status::Unsupported`).
@@ -284,7 +286,7 @@ Response r = m.chat({Message::System("Perform TTS in American English using a fe
 
 A larger context costs memory; set it only as large as the app needs. CLI: `--ctx <positions>`. Prompt rows plus the
 reserved reply (`max_tokens`, speech frames) must fit, or the request returns `Status::ContextExceeded`. d1 models keep
-their 1,024-row pass.
+their own pass limit (`Capabilities::max_context`; 1,024 rows in SDK 0.2.2).
 
 ## Common errors
 
