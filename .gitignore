@@ -3,3 +3,6 @@
 *.tar.gz.sha256
 zetic-mlange-hexagon-*/
 models/
+ixian-hexagon-*/
+# a local clone of ggml-org/llama.cpp used as the API reference of tools/server
+reference/

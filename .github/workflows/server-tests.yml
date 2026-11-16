@@ -1,0 +1,50 @@
+# Builds ixian-server against the mock engine (no NPU) and runs the API test-suite.
+name: server tests
+
+on:
+  push:
+    paths: ["tools/server/**", ".github/workflows/server-tests.yml"]
+  pull_request:
+    paths: ["tools/server/**", ".github/workflows/server-tests.yml"]
+
+jobs:
+  mock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ ninja-build ffmpeg
+      - name: Fetch the SDK headers (release tarball)
+        run: tools/server/scripts/fetch-sdk.sh 0.2.2
+      - name: Configure and build (mock engine)
+        run: |
+          cmake -S tools/server -B build-mock -G Ninja -DIXIAN_SERVER_MOCK_ENGINE=ON -DIXIAN_SERVER_WERROR=ON
+          cmake --build build-mock
+      - name: C++ self-tests
+        run: |
+          build-mock/bin/ixsrv-media-selftest samples || build-mock/ixsrv-media-selftest samples
+          build-mock/bin/ixsrv-mock-selftest || build-mock/ixsrv-mock-selftest
+      - name: Python test-suite
+        run: |
+          python3 -m pip install -r tools/server/tests/requirements.txt
+          cd tools/server/tests && IXIAN_SERVER_BIN_PATH=$GITHUB_WORKSPACE/build-mock/bin/ixian-server pytest -v -n 4 -m "not slow"
+
+  cross:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the aarch64 toolchain
+        run: sudo apt-get update && sudo apt-get install -y cmake g++-aarch64-linux-gnu ninja-build
+      - name: Fetch the SDK (release tarball)
+        run: tools/server/scripts/fetch-sdk.sh 0.2.2
+      - name: Cross-compile for the IQ9
+        run: |
+          cmake -S tools/server -B build-aarch64 -G Ninja -DCMAKE_TOOLCHAIN_FILE=tools/server/cmake/aarch64-linux-gnu.toolchain.cmake -DIXIAN_SERVER_BUILD_TESTS=OFF
+          cmake --build build-aarch64
+          file build-aarch64/bin/ixian-server
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ixian-server-linux-arm64
+          path: build-aarch64/bin/ixian-server

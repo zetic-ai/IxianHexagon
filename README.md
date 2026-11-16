@@ -375,6 +375,22 @@ A larger context costs memory; set it only as large as the app needs. The reply 
 **d1 models** have no context option (`Decision::Options` has none): a request takes up to 2,048 rows per pass in
 SDK 0.2.2. Read the limit from `Capabilities::max_context` (`zetic_d1_cli info` prints it as `max rows`).
 
+## HTTP server (`tools/server`)
+
+[`tools/server`](tools/server) builds `ixian-server`, an HTTP server with the API of llama.cpp's `llama-server`
+(OpenAI chat / completions / responses / audio, Anthropic messages, `/v1/systemone` for d1, `/tokenize`, `/props`,
+`/metrics`, ...) on top of the SDK. A client written for `llama-server` talks to the IQ9's NPU unchanged:
+
+```bash
+sudo apt install -y cmake
+cmake -S IxianHexagon/tools/server -B build-server -DIXIAN_SDK_DIR=$SDK && cmake --build build-server -j
+build-server/bin/ixian-server -m models/lfm3-omni-2b --host 0.0.0.0 --port 8080
+curl localhost:8080/v1/chat/completions -H 'Content-Type: application/json' \
+  -d '{"messages": [{"role": "user", "content": "What is the capital of France?"}]}'
+```
+
+See [`tools/server/README.md`](tools/server/README.md) for the endpoints, the flags and the differences from `llama-server`.
+
 ## Common errors
 
 | Message | What it means | What to do |
