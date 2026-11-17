@@ -2,14 +2,14 @@
   <img src=".github/assets/zetic-banner.png" alt="ZETIC: More tasks. Done right." width="100%">
 </p>
 
-# Ixian Hexagon SDK for the Dragonwing IQ9
+# ixian Hexagon SDK for the Dragonwing IQ9
 
 [![Release](https://img.shields.io/github/v/release/zetic-ai/IxianHexagon?label=release&color=16867d)](https://github.com/zetic-ai/IxianHexagon/releases)
 ![Dragonwing IQ9 (QCS9075)](https://img.shields.io/badge/Dragonwing_IQ9_%28QCS9075%29-2b3137)
 ![Hexagon NPU](https://img.shields.io/badge/Hexagon_NPU-2b3137)
 [![Models on Hugging Face](https://img.shields.io/badge/Models-Hugging_Face-FFD21E?logo=huggingface)](https://huggingface.co/collections/ZETIC-ai/lfm3-and-d1-on-dragonwing-iq9-6af400b9da045ed7cfa23b0e)
 
-This repository distributes the Ixian Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
+This repository distributes the ixian Hexagon SDK for the Qualcomm Dragonwing IQ9 (QCS9075) as binaries.
 The SDK runs the LFM3 family and the d1 decision models on the Hexagon NPU of the IQ9 with ZETIC's own Hexagon
 runtime. Each SDK version is a GitHub Release; the model packages are on Hugging Face; [`samples/`](samples) holds small
 inputs for the examples.
