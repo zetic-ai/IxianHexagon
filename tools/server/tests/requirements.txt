@@ -1,0 +1,5 @@
+pytest>=8
+pytest-xdist>=3
+requests>=2.31
+openai>=1.50
+anthropic>=0.40
