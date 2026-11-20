@@ -56,12 +56,16 @@ python3 -m venv .venv                   # "ensurepip is not available": sudo apt
 ```
 
 **3. Download the models.** One Hugging Face repository per model. `v73` is the IQ9 package; LFM3 models run it on both
-NSPs, d1 models on one. `--include "v73/*"` skips the LFM3 models' optional one-NSP `v73-1nsp` package.
+NSPs, d1 models on one. `--exclude "v73-1nsp/*"` skips the LFM3 models' optional one-NSP `v73-1nsp` package; the d1
+repositories have only `v73`.
 
 ```bash
-.venv/bin/hf download ZETIC-ai/LFM3-Omni-2B-IQ9 --include "v73/*" --local-dir models/lfm3-omni-2b    # 3.6 GB
-.venv/bin/hf download ZETIC-ai/d1-Omni-2B-IQ9 --include "v73/*" --local-dir models/d1-omni-2b        # 2.4 GB
+.venv/bin/hf download ZETIC-ai/LFM3-Omni-2B-IQ9 --exclude "v73-1nsp/*" --local-dir models/lfm3-omni-2b    # 3.6 GB
+.venv/bin/hf download ZETIC-ai/d1-Omni-2B-IQ9 --local-dir models/d1-omni-2b                               # 2.4 GB
 ```
+
+Besides the `v73` folder, each command also puts the repository's `README.md`, `LICENSE` and `config.json` (the list of
+its packages) into the model directory; the SDK reads only the `v73` folder.
 
 If a download stops (connection lost, Ctrl-C, disk full), run the same command again: it resumes. The partly downloaded
 files wait in `models/<model>/.cache/huggingface/download/` as `*.incomplete`. To give up on a model and get the space
