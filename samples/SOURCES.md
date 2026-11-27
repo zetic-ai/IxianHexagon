@@ -1,7 +1,7 @@
 # Sample inputs: sources and licenses
 
-Small inputs for the SDK examples and the CLI presets (`--data samples`). Every image and video frame is 512 x 512 RGB, the
-size the SDK takes; every WAV is 16 kHz mono 16-bit PCM.
+Small inputs for the SDK examples and the CLI presets (`--data samples`). Every image and video frame is 512 x 512 RGB (the
+SDK takes images of any size); every WAV is 16 kHz mono 16-bit PCM.
 
 | File | Content | Source | License |
 |---|---|---|---|
