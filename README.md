@@ -67,7 +67,7 @@ sample inputs for the examples ([`samples/`](samples)); SDK binaries are release
 | `lib/libzetic_ixian_hexagon.so` | the SDK library (C++ API in `include/`) |
 | `lib/libhexrt_v73_skel.so` | the library that runs on the NPU; the SDK adds its directory to `ADSP_LIBRARY_PATH` |
 | `lib/cmake/IxianHexagon/` | CMake package: `find_package(IxianHexagon)`, target `zetic::ixian_hexagon` |
-| `include/` | `zetic_llm.h` (LFM3 chat), `zetic_decision.h` (d1 decisions), `zetic_media.h`, `zetic_selection.h`, `zetic_types.h` |
+| `include/` | `zetic_llm.h` (LFM3 chat), `zetic_decision.h` (d1 decisions), `zetic_media.h`, `zetic_types.h` |
 | `bin/zetic_quickstart`, `bin/zetic_d1_quickstart` | the two examples, built |
 | `bin/zetic_lfm3_cli`, `bin/zetic_d1_cli` | test / demo / benchmark tools for the LFM3 and d1 packages |
 | `examples/quickstart`, `examples/d1_quickstart` | the examples' source with their `CMakeLists.txt` (LFM3 chat; d1 decisions) |
@@ -334,8 +334,8 @@ with a larger `max_context` (CLI `--ctx 4096`) for very large pictures, or set `
 
 - `--model` takes the package file (`models/LFM3-Omni-2B.ztc`); the one-NSP package is `models/LFM3-Omni-2B-1nsp.ztc`.
 - `zetic_lfm3_cli` commands: `chat`, `eval`, `bench`, `info`; it prints its usage when run without arguments. In the
-  usage text `a | b` means "a or b", not a shell pipe. `zetic_d1_cli` commands: `info`, `demo`, `ask`, `serve`, each
-  with `--model <file>.ztc`.
+  usage text `a | b` means "a or b", not a shell pipe. `zetic_d1_cli` commands: `info`, `demo`, `ask`, `seq`, `serve`,
+  each with `--model <file>.ztc`; it also prints its usage when run without arguments.
 - Chat, speech output and voice chat:
 
   ```bash
@@ -366,7 +366,7 @@ with a larger `max_context` (CLI `--ctx 4096`) for very large pictures, or set `
   - `eval video` stops each answer at 96 tokens (`finish length`); add `--max-tokens 256` for a full description.
   - `bench text` and `eval ppl` read only the start of the ids file: a prompt of about 1,024 rows (`--n`); `eval ppl` then
     scores the next 257 tokens (`--score`).
-  - `bench text` writes its prompt ids to `./zsdk_bench_ids.txt`. `bench tts` / `bench voice` write one WAV per repetition
+  - `bench text` writes its prompt ids to `./bench_prompt_ids.txt`. `bench tts` / `bench voice` write one WAV per repetition
     (4 by default, `--reps`) under `./zsdk_speech_ab/` (`--work` changes it).
 - d1 from files or from another program:
 
