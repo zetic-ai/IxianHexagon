@@ -198,7 +198,7 @@ with audio output.
 - `d1-2B.ztc` / `d1-Omni-2B.ztc` run each pass on **both NSPs** (`ModelInfo::nsp_count` = 2); `d1-2B-1nsp.ztc` /
   `d1-Omni-2B-1nsp.ztc` on one. Both give the same answers. A text-only request with a few questions is about 40 to
   150 rows; an image adds 256.
-- Accuracy: 8-bit weights and 16-bit activations. Measured on the IQ9 with the SDK (`zetic_d1_cli ask`, both NSPs; the
+- Answers (8-bit weights, 16-bit activations), measured on the IQ9 with the SDK (`zetic_d1_cli ask`, both NSPs; the
   test set: 181 questions for d1-2B over text and image requests, 231 for d1-Omni-2B with audio):
 
   | | d1-2B | d1-Omni-2B |
