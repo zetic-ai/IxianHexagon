@@ -288,8 +288,10 @@ $SDK/bin/zetic_d1_quickstart models/d1-Omni-2B.ztc "A customer sent this recordi
 $SDK/bin/zetic_d1_quickstart models/d1-Omni-2B.ztc "A customer sent a photo and a recording." $S/cats.png $S/jfk.wav
 ```
 
-- `zetic_quickstart` answers, then asks one follow-up ("And its population?") that reuses the cached first turn (the
-  media are not encoded again).
+- `zetic_quickstart` answers, then asks one follow-up that reuses the cached first turn (the media are not encoded again).
+  The follow-up fits the input: "What colors stand out in the image?" (image, or image + audio), "Summarize the audio in
+  one sentence." (audio only), "Say that again in one sentence." (your own text) or "And its population?" (the default
+  France question).
 - `zetic_d1_quickstart` asks three ticket questions about the text in one NPU pass: `refund` (yes / no, prints P(yes)),
   `team` (billing or shipping) and `urgency` (low / medium / high). With an image it adds `animal` ("Does the image show an
   animal?"); with audio it adds `speech` ("Is a person speaking in the audio?") and `topic` (country / sports / cooking).
