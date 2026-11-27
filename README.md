@@ -44,14 +44,12 @@ sample inputs for the examples ([`samples/`](samples)); SDK binaries are release
   image keeps its aspect ratio and native resolution (resized to multiples of 32 pixels). `GenerationConfig::max_image_pixels`
   (d1: `Decision::Options::max_image_pixels`) sets a lower pixel ceiling when you want fewer image tokens. d1 first caps
   a picture at its package's pixel limit, as its Hugging Face processor does.
-- **Faster decode on both NSPs.** One NPU call runs the decode steps back to back. LFM3-1.7B with a 1,024-token prompt
-  generates 74.2 tokens/s on both NSPs and 54.3 tokens/s on one NSP; time to first token 256 ms on both NSPs.
+- **Faster decode on both NSPs.** One NPU call runs the decode steps back to back.
 - **The CPU stays free.** The NPU computes the whole output layer during decode.
 - **Prompts closer to the original model.** The 8-bit weights of the prompt (prefill) path are made from the original
   Hugging Face weights.
 - **d1 on both NSPs.** `d1-2B.ztc` / `d1-Omni-2B.ztc` split each decision pass over the two NSPs
-  (`ModelInfo::nsp_count` = 2): a pass of 401 rows (an image and its questions) takes 87 ms of NPU time on both NSPs
-  against 131 ms on one. The answers are the same as with one NSP.
+  (`ModelInfo::nsp_count` = 2). The answers are the same as with one NSP.
 - **Faster d1 images.** The image encoder of the d1 packages runs with 8-bit weights.
 - **Removed:** `LLM::fromModelKey` (a local model-cache lookup that loaded package folders); load the `.ztc` file with
   `fromPath`.
@@ -198,15 +196,8 @@ with audio output.
   package's pixel limit and then processes it as its Hugging Face processor does. d1 takes no video
   (`Status::Unsupported`).
 - `d1-2B.ztc` / `d1-Omni-2B.ztc` run each pass on **both NSPs** (`ModelInfo::nsp_count` = 2); `d1-2B-1nsp.ztc` /
-  `d1-Omni-2B-1nsp.ztc` on one. Both give the same answers. NPU time per pass on the IQ9, by pass length (d1-Omni-2B
-  the same per row count):
-
-  | Rows per pass | 43 | 144 | 294 | 401 | 1,024 | 2,048 |
-  |---|---:|---:|---:|---:|---:|---:|
-  | both NSPs (ms) | 32.4 | 47.3 | 76.0 | 87.4 | 183.2 | 387.4 |
-  | one NSP (ms) | 38.9 | 55.9 | 99.1 | 131.0 | 331.9 | 751.0 |
-
-  A text-only request with a few questions is about 40 to 150 rows; a 512 x 512 image adds 256.
+  `d1-Omni-2B-1nsp.ztc` on one. Both give the same answers. A text-only request with a few questions is about 40 to
+  150 rows; an image adds 256.
 - Accuracy: 8-bit weights and 16-bit activations. Measured on the IQ9 with the SDK (`zetic_d1_cli ask`, both NSPs; the
   test set: 181 questions for d1-2B over text and image requests, 231 for d1-Omni-2B with audio):
 
@@ -215,13 +206,8 @@ with audio output.
   | Correct answers (the original model: 137 / 181, 177 / 231) | 137 / 181 | 177 / 231 |
   | Top answer equal to the original model's | 181 / 181 | 231 / 231 |
   | Probability difference to the original model, mean / max | 0.004 / 0.032 | 0.004 / 0.039 |
-  | Time per request: text, a passage and 1 question (ms) | 79 | 69 |
-  | Time per request: one 512 x 512 image and 1 question (ms) | 129 | 128 |
-  | Time per request: one audio clip and 1 question (ms) | - | 52 |
 
-  Times are the median of the test set's 25 requests of that kind, from the request to the answers, image or audio
-  encoding included; the text requests are short, so their time is mostly not the NPU pass. The one-NSP files give the
-  same answers as the two-NSP files.
+  The one-NSP files give the same answers as the two-NSP files.
 
 **One active model per process.** To free the NPU, destroy the `LLM` / `Decision` object; loading again takes a few
 seconds.
